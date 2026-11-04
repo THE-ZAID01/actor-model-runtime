@@ -143,6 +143,16 @@ For automatic Node restart during API development, run `npm run dev` instead of
 `npm start`. The available commands are listed in
 [Configuration](docs/CONFIGURATION.md).
 
+To seed 200 idle `CounterActor` records (`actor-3` through `actor-202`) into
+MongoDB, start MongoDB and run:
+
+```powershell
+npm run seed
+```
+
+The seed command leaves existing records with those IDs unchanged, so it can be
+run again safely.
+
 ## Docker Compose
 
 The Compose file starts MongoDB, Redis, one API container, and one worker
@@ -152,7 +162,9 @@ container:
 docker compose up --build
 ```
 
-The API is exposed on port 3000. MongoDB and Redis data use named volumes.
+The API is exposed on port 3000. MongoDB and Redis are bound to localhost ports
+27017 and 6379 for local Node processes; containers use the service names
+`mongodb` and `redis` instead. MongoDB and Redis data use named volumes.
 Compose's example MongoDB and Redis services are unauthenticated and are for
 local development only. Stop the services with `Ctrl+C`; `docker compose down`
 keeps named volumes. Removing volumes is destructive to local data and is not

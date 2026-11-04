@@ -7,6 +7,7 @@
     "start": "node src/server.js",
     "dev": "node --watch src/server.js",
     "worker": "node src/server.js --worker",
+    "seed": "node scripts/seed.js",
     "format": "prettier --write \"**/*.{js,css,yaml,yml,json,md,html}\" && node scripts/format-ejs.js"
   },
   "keywords": [],

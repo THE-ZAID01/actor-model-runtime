@@ -6,10 +6,22 @@ export function getKubeClients() {
   if (clients || connectionError) return { clients, error: connectionError };
   try {
     const config = new KubeConfig();
-    try {
+    if (
+      process.env.KUBERNETES_SERVICE_HOST &&
+      process.env.KUBERNETES_SERVICE_PORT
+    ) {
       config.loadFromCluster();
-    } catch {
+    } else {
       config.loadFromDefault();
+    }
+    const server = config.getCurrentCluster()?.server;
+    if (!server) throw new Error('Kubernetes API server is not configured');
+    const serverUrl = new URL(server);
+    if (
+      !['http:', 'https:'].includes(serverUrl.protocol) ||
+      !serverUrl.hostname
+    ) {
+      throw new Error(`Invalid Kubernetes API server URL: ${server}`);
     }
     clients = {
       core: config.makeApiClient(CoreV1Api),

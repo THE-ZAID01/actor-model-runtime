@@ -22,9 +22,10 @@ In another PowerShell terminal:
 npm run worker
 ```
 
-The API listens on port 3000 by default; the worker listens on 3101. Configure
-`.env` using [Configuration](CONFIGURATION.md). For multiple workers, assign
-unique IDs/ports and set a host that the API can reach.
+The API listens on port 3000 by default; the worker listens on 3101. Compose
+publishes MongoDB and Redis on localhost ports 27017 and 6379 for these local
+processes. Configure `.env` using [Configuration](CONFIGURATION.md). For
+multiple workers, assign unique IDs/ports and set a host that the API can reach.
 
 ## Docker Compose
 
@@ -33,9 +34,10 @@ docker compose up --build
 ```
 
 Compose starts `mongodb`, `redis`, `api`, and one `worker`. The API is published
-on host port 3000; worker port 3101 is exposed only inside the Compose network.
-MongoDB and Redis use named data volumes. `docker compose down` stops services
-but preserves those volumes.
+on host port 3000; MongoDB and Redis are bound to localhost ports 27017 and
+6379; worker port 3101 is exposed only inside the Compose network. Containers
+connect to MongoDB and Redis by their service names. They use named data
+volumes. `docker compose down` stops services but preserves those volumes.
 
 The Compose file does not configure MongoDB or Redis authentication. It is
 development configuration only.

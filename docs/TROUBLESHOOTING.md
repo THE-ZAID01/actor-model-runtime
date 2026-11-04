@@ -11,6 +11,12 @@ docker compose ps
 docker compose logs mongodb redis api worker
 ```
 
+For an API or worker launched directly with Node, use
+`mongodb://127.0.0.1:27017/actorlab` and `redis://127.0.0.1:6379`; the Compose
+services publish those ports on localhost. A process running inside the Compose
+network must instead use `mongodb` and `redis` as the hostnames. The API and
+worker in the Compose file are already configured with those service names.
+
 The API retries failed initial MongoDB/Redis connections every five seconds.
 Workers, in contrast, must connect to both before opening their HTTP server.
 
@@ -41,11 +47,15 @@ not.
 
 ## Kubernetes page reports Local Development Mode
 
-The Kubernetes client first tries in-cluster configuration and then the
-default local kubeconfig. Verify `kubectl config current-context`, the API
-pod's service account, and `k8s/05-rbac.yaml`. The API Role is limited to the
-`actorlab` namespace, pod reads/logs, and `get`/`patch` on `actor-worker`.
-Kubernetes API operations use a 3-second default timeout.
+The Kubernetes client uses in-cluster configuration when both
+`KUBERNETES_SERVICE_HOST` and `KUBERNETES_SERVICE_PORT` are set; otherwise, it
+loads the default local kubeconfig. Verify `kubectl config current-context`,
+the API pod's service account, and `k8s/05-rbac.yaml`. The API Role is limited
+to the `actorlab` namespace, pod reads/logs, and `get`/`patch` on
+`actor-worker`. Kubernetes API operations use a 3-second default timeout.
+
+Local and Docker Compose runs need a usable default kubeconfig for Kubernetes
+operations; the Compose setup does not provide Kubernetes credentials.
 
 ## Worker replica count changes, but actor routing does not
 

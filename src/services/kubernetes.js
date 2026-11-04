@@ -75,8 +75,7 @@ export async function scaleWorkers(replicas) {
   await clients.apps.patchNamespacedDeployment({
     name: deploymentName,
     namespace,
-    body: { spec: { replicas } },
-    headers: { 'Content-Type': 'application/merge-patch+json' },
+    body: [{ op: 'add', path: '/spec/replicas', value: replicas }],
   });
 }
 export async function getPodLogs(podName) {
