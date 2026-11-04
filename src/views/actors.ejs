@@ -47,6 +47,8 @@
           <th>TYPE</th>
           <th>STATUS</th>
           <th>WORKER</th>
+          <th>OWNER GENERATION</th>
+          <th>PENDING MESSAGES</th>
           <th>VERSION</th>
           <th>LAST ACTIVE</th>
           <th></th>
@@ -66,7 +68,9 @@
               ><%= actor.status.toUpperCase() %></span
             >
           </td>
-          <td><%= actor.workerId || '—' %></td>
+          <td><%= actor.ownerStatus==='ACTIVE' ? actor.workerId : actor.ownerStatus==='UNAVAILABLE' ? `UNAVAILABLE: ${actor.workerId}` : 'UNASSIGNED' %></td>
+          <td><%= actor.ownerGeneration || 0 %></td>
+          <td><%= actor.pendingMessageCount || 0 %></td>
           <td><%= actor.version %></td>
           <td><%= actor.lastActiveAt ? new
             Date(actor.lastActiveAt).toLocaleString() : '—' %></td>

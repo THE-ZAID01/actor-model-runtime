@@ -16,6 +16,8 @@ metadata:
   namespace: actorlab
 spec:
   replicas: 1
+  strategy:
+    type: Recreate
   selector:
     matchLabels:
       app: mongodb
@@ -39,6 +41,12 @@ spec:
                 ['mongosh', '--quiet', '--eval', "db.adminCommand('ping').ok"]
             initialDelaySeconds: 5
             periodSeconds: 5
+          livenessProbe:
+            exec:
+              command:
+                ['mongosh', '--quiet', '--eval', "db.adminCommand('ping').ok"]
+            initialDelaySeconds: 15
+            periodSeconds: 10
       volumes:
         - name: data
           persistentVolumeClaim:

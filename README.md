@@ -25,14 +25,15 @@ between live workers without changing their IDs.
 
 - Three built-in actor types: `CounterActor`, `BankAccountActor`, and
   `GlobalSchedulerActor`.
-- MongoDB-backed actor state with optimistic version checks.
-- Per-actor sequential request queues within each worker process.
+- MongoDB-backed actor state, durable sequenced messages, migration records, and optimistic version checks.
+- Per-actor sequential request queues within each worker process, backed by a
+  Redis execution lease for cross-Pod serialization.
 - Redis worker heartbeats and actor-to-worker ownership records.
-- Direct HTTP message dispatch from the API to the selected worker.
+- Direct HTTP message dispatch from the API to the selected worker, with worker polling to recover pending MongoDB messages.
 - Best-effort duplicate suppression using caller-supplied message IDs and
   bounded processed-message history; this is not exactly-once delivery.
-- A manual actor-count rebalancer with a drain request and ownership-generation
-  change.
+- A Redis-locked actor-count rebalancer that runs periodically and can also be
+  triggered manually.
 - A Redis TTL lease and fencing generation for the built-in scheduler actor.
 - Kubernetes pod discovery, pod-log retrieval, and worker Deployment scaling.
 - EJS pages for actors, workers, rebalancing, singleton status, and cluster
@@ -187,7 +188,8 @@ kubectl -n actorlab port-forward service/actorlab-api 3000:3000
 Then open <http://localhost:3000>. The sample includes a single API replica,
 two worker replicas, single-replica MongoDB and Redis Deployments, and an API
 NodePort Service. The API's service account has namespaced permissions to
-inspect pods/logs and patch only the `actor-worker` Deployment. Worker scaling
+inspect worker pods/logs and patch only the `actor-worker` Deployment, plus a
+cluster-scoped read-only binding to list nodes for the Cluster page. Worker scaling
 is available in the Cluster page or via:
 
 ```powershell
@@ -240,11 +242,7 @@ illustrative diagrams as application screenshots.
 
 ## Limitations and future work
 
-This implementation has no durable inbound queue, authentication/authorization,
-TLS setup, automated rebalance controller, replica-safe singleton storage, or
-automated application test suite. Rebalancing is manually triggered and uses
-actor counts rather than measured resource load. The manifests are a learning
-baseline, not a hardened production deployment. See
+The sample still has no authentication or TLS, uses single-replica MongoDB and Redis, and provides no cross-database transaction. Redis execution leases and MongoDB fencing reduce stale writes but are not production-grade distributed guarantees. Resource metrics fall back to actor counts when Metrics Server is unavailable. Run `npm run test:integration` with `ACTORLAB_API_URL` set to exercise the verified actor flows. See
 [Limitations and future scope](docs/LIMITATIONS_AND_FUTURE_SCOPE.md) for a
 fuller list and possible next steps.
 
@@ -269,4 +267,5 @@ fuller list and possible next steps.
   [security considerations](docs/SECURITY_CONSIDERATIONS.md),
   [testing](docs/TESTING_AND_VALIDATION.md), and
   [troubleshooting](docs/TROUBLESHOOTING.md)
+- [Runtime requirement assessment](docs/REQUIREMENT_ASSESSMENT.md)
 - [College project report guide](docs/PROJECT_REPORT_GUIDE.md)
