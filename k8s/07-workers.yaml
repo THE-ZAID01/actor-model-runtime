@@ -1,0 +1,61 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: actor-worker
+  namespace: actorlab
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: actor-worker
+  template:
+    metadata:
+      labels:
+        app: actor-worker
+    spec:
+      containers:
+        - name: worker
+          image: actorlab:latest
+          imagePullPolicy: IfNotPresent
+          command: ['node', 'src/server.js', '--worker']
+          ports:
+            - name: worker-http
+              containerPort: 3101
+          envFrom:
+            - configMapRef:
+                name: actorlab-config
+            - secretRef:
+                name: actorlab-connections
+          env:
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: POD_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+            - name: WORKER_ID
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: worker-http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: actor-worker-headless
+  namespace: actorlab
+spec:
+  clusterIP: None
+  selector:
+    app: actor-worker
+  ports:
+    - name: worker-http
+      port: 3101
+      targetPort: worker-http

@@ -1,0 +1,24 @@
+sequenceDiagram
+  autonumber
+  participant WorkerA
+  participant WorkerB
+  participant Coordinator
+  participant Redis
+  participant ActorDB as MongoDB
+  WorkerA->>Coordinator: Acquire lease for worker A
+  Coordinator->>Redis: SET lease NX PX with token
+  Redis-->>Coordinator: Acquired
+  Coordinator->>Redis: Increment generation and update status hash
+  WorkerB->>Coordinator: Acquire lease for worker B
+  Coordinator->>Redis: SET lease NX PX
+  Redis-->>Coordinator: Lease busy
+  loop While lease holder is healthy
+    WorkerA->>Coordinator: Renew with worker ID and token
+    Coordinator->>Redis: Compare token and extend TTL
+  end
+  Note over WorkerA,Redis: If A stops renewing, the lease key expires
+  WorkerB->>Coordinator: Retry acquisition
+  Coordinator->>Redis: SET lease NX PX with new token
+  Redis-->>Coordinator: Acquired
+  Coordinator->>Redis: Increment generation
+  WorkerB->>ActorDB: Process only with current singleton generation

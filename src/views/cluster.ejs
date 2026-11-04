@@ -1,0 +1,95 @@
+<section class="page-head">
+  <div>
+    <div class="section-kicker">
+      KUBERNETES ADAPTER <span>LIVE STATUS</span>
+    </div>
+    <h1>Cluster status</h1>
+    <p>
+      Pod and Deployment information comes from the configured Kubernetes API.
+    </p>
+  </div>
+  <span class="badge <%= cluster.connected?'online':'balanced' %>"><%= cluster.connected?'CONNECTED':'LOCAL DEVELOPMENT MODE' %></span>
+</section>
+<section class="panel cluster-banner">
+  <div class="cluster-symbol">☸</div>
+  <div>
+    <b><%= cluster.mode %></b>
+    <p><%= cluster.message %></p>
+    <% if(cluster.deployment){ %>
+    <p>
+      Worker deployment: <%= cluster.deployment.readyReplicas || 0 %> ready / <%= cluster.deployment.replicas || 0 %>
+      desired replicas
+    </p>
+    <% } %>
+  </div>
+</section>
+<div class="details-grid">
+  <section class="panel table-panel">
+    <div class="panel-heading">
+      <div>
+        <h2>Actor worker pods</h2>
+        <small>Only actual pods are displayed.</small>
+      </div>
+      <span class="badge <%= cluster.connected?'online':'balanced' %>"
+        ><%= pods.length %> PODS</span
+      >
+    </div>
+    <% if(pods.length){ %>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>POD</th>
+            <th>STATUS</th>
+            <th>IP</th>
+            <th>NODE</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <% pods.forEach(pod=>{ %>
+          <tr>
+            <td><%= pod.metadata?.name %></td>
+            <td><%= pod.status?.phase %></td>
+            <td><%= pod.status?.podIP || '—' %></td>
+            <td><%= pod.spec?.nodeName || '—' %></td>
+            <td><a href="/cluster/logs/<%= encodeURIComponent(pod.metadata?.name) %>">Logs →</a></td>
+          </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+    <% }else{ %>
+    <div class="empty"><%= cluster.connected?'No actor-worker pods found in this namespace.':cluster.message %></div>
+    <% } %>
+  </section>
+  <section class="panel form-panel">
+    <div class="panel-heading">
+      <div>
+        <h2>Scale worker Deployment</h2>
+        <small>Requires a connected cluster and configured RBAC.</small>
+      </div>
+    </div>
+    <form class="stack-form" method="post" action="/cluster/scale">
+      <label
+        >Replicas<input
+          type="number"
+          name="replicas"
+          min="0"
+          max="50"
+          value="2"
+          required /></label
+      ><button class="button primary" <%= !cluster.connected?'disabled':'' %>>
+        Apply scale <span>↗</span>
+      </button>
+    </form>
+  </section>
+</div>
+<% if(logError){ %>
+<div class="flash error"><%= logError %></div>
+<% } %><% if(logs){ %>
+<section class="panel table-panel">
+  <div class="panel-heading"><h2>Pod logs · <%= selectedPod %></h2></div>
+  <pre class="log-output"><%= logs %></pre>
+</section>
+<% } %>

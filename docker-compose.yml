@@ -1,0 +1,63 @@
+services:
+  mongodb:
+    image: mongo:7
+    restart: unless-stopped
+    volumes:
+      - mongodb-data:/data/db
+    healthcheck:
+      test:
+        ['CMD', 'mongosh', '--quiet', '--eval', "db.adminCommand('ping').ok"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ['redis-server', '--appendonly', 'yes']
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+  api:
+    build: .
+    restart: unless-stopped
+    environment:
+      PORT: 3000
+      MONGODB_URI: mongodb://mongodb:27017/actorlab
+      REDIS_URL: redis://redis:6379
+      K8S_NAMESPACE: actorlab
+      WORKER_DEPLOYMENT: actor-worker
+    ports:
+      - '3000:3000'
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+  worker:
+    build: .
+    restart: unless-stopped
+    command: ['node', 'src/server.js', '--worker']
+    environment:
+      WORKER_ID: worker-compose-1
+      WORKER_PORT: 3101
+      WORKER_ADVERTISE_HOST: worker
+      COORDINATOR_URL: http://api:3000
+      RUNTIME_MODE: compose
+      MONGODB_URI: mongodb://mongodb:27017/actorlab
+      REDIS_URL: redis://redis:6379
+    expose:
+      - '3101'
+    depends_on:
+      api:
+        condition: service_started
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+volumes:
+  mongodb-data:
+  redis-data:

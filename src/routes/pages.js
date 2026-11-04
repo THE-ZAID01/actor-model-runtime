@@ -1,0 +1,246 @@
+import { Router } from 'express';
+import Actor from '../models/Actor.js';
+import Message from '../models/Message.js';
+import {
+  dashboardData,
+  listWorkers,
+  allRuntimeEvents,
+  singletonStatus,
+  rebalance,
+  createActor,
+  sendMessage,
+  recordEvent,
+} from '../services/runtime.js';
+import {
+  getClusterStatus,
+  scaleWorkers,
+  getPodLogs,
+} from '../services/kubernetes.js';
+import { asyncHandler } from '../middleware/errors.js';
+const router = Router();
+const render = (res, view, page, locals = {}) =>
+  res.render('layout', { page, view, ...locals });
+
+router.get(
+  '/',
+  asyncHandler(async (_req, res) =>
+    render(res, 'dashboard', 'Dashboard', {
+      data: await dashboardData(),
+      singleton: await singletonStatus(),
+      cluster: await getClusterStatus(),
+    }),
+  ),
+);
+router.get(
+  '/actors',
+  asyncHandler(async (_req, res) =>
+    render(res, 'actors', 'Actors', {
+      actors: await Actor.find().sort({ createdAt: -1 }).lean(),
+    }),
+  ),
+);
+router.get(
+  '/actors/:id',
+  asyncHandler(async (req, res) => {
+    const actor = await Actor.findOne({ actorId: req.params.id }).lean();
+    if (!actor)
+      return res.status(404).render('layout', {
+        view: 'not-found',
+        page: 'Not found',
+        message: 'Actor not found',
+      });
+    const messages = await Message.find({ actorId: actor.actorId })
+      .sort({ createdAt: -1 })
+      .limit(20)
+      .lean();
+    render(res, 'actor-details', actor.actorId, { actor, messages });
+  }),
+);
+router.get(
+  '/workers',
+  asyncHandler(async (_req, res) => {
+    const registry = await listWorkers()
+      .then((workers) => ({ workers, available: true }))
+      .catch(() => ({ workers: [], available: false }));
+    const cluster = await getClusterStatus();
+    const clusterWorkers = (cluster.pods || []).map((pod) => ({
+      name: pod.metadata?.name,
+      status: pod.status?.phase,
+      ip: pod.status?.podIP,
+      node: pod.spec?.nodeName,
+    }));
+    return render(res, 'workers', 'Workers', {
+      ...registry,
+      actors: await Actor.find().lean(),
+      clusterWorkers,
+      cluster,
+    });
+  }),
+);
+router.get(
+  '/rebalancing',
+  asyncHandler(async (_req, res) => {
+    const registry = await listWorkers()
+      .then((workers) => ({ workers, available: true }))
+      .catch(() => ({ workers: [], available: false }));
+    return render(res, 'rebalancing', 'Rebalancing', {
+      ...registry,
+      actors: await Actor.find().lean(),
+      events: await allRuntimeEvents(20),
+    });
+  }),
+);
+router.get(
+  '/singletons',
+  asyncHandler(async (_req, res) => {
+    const registry = await listWorkers()
+      .then((workers) => ({ workers, available: true }))
+      .catch(() => ({ workers: [], available: false }));
+    return render(res, 'singletons', 'Singletons', {
+      state: await singletonStatus(),
+      ...registry,
+      actors: await Actor.find({ actorType: 'GlobalSchedulerActor' }).lean(),
+      events: await allRuntimeEvents(20),
+    });
+  }),
+);
+router.get(
+  '/cluster',
+  asyncHandler(async (_req, res) => {
+    const cluster = await getClusterStatus();
+    render(res, 'cluster', 'Cluster', {
+      cluster,
+      pods: cluster.connected ? cluster.pods : [],
+      logs: null,
+      logError: null,
+    });
+  }),
+);
+router.post(
+  '/cluster/scale',
+  asyncHandler(async (req, res) => {
+    const replicas = Number(req.body.replicas);
+    if (!Number.isInteger(replicas) || replicas < 0 || replicas > 50)
+      return res.redirect(
+        '/cluster?error=Enter%20a%20replica%20count%20from%200%20to%2050',
+      );
+    await scaleWorkers(replicas);
+    res.redirect('/cluster?message=Worker%20scale%20requested');
+  }),
+);
+router.get(
+  '/cluster/logs/:pod',
+  asyncHandler(async (req, res) => {
+    const cluster = await getClusterStatus();
+    if (!cluster.connected)
+      return res.status(503).render('layout', {
+        view: 'cluster',
+        page: 'Cluster',
+        cluster,
+        pods: [],
+        logs: null,
+        logError: 'Kubernetes is unavailable',
+      });
+    const logs = await getPodLogs(req.params.pod);
+    render(res, 'cluster', 'Cluster', {
+      cluster,
+      pods: cluster.pods || [],
+      logs,
+      logError: null,
+      selectedPod: req.params.pod,
+    });
+  }),
+);
+router.post(
+  '/actors/create',
+  asyncHandler(async (req, res) => {
+    const actorId = String(req.body.actorId || '').trim();
+    if (
+      !/^[a-zA-Z0-9][a-zA-Z0-9._:-]{0,119}$/.test(actorId) ||
+      !['CounterActor', 'BankAccountActor', 'GlobalSchedulerActor'].includes(
+        req.body.actorType,
+      )
+    )
+      return res.redirect('/actors?error=Invalid%20actor%20ID%20or%20type');
+    try {
+      const actor = await createActor({
+        actorId,
+        actorType: req.body.actorType,
+      });
+      res.redirect(`/actors/${encodeURIComponent(actor.actorId)}`);
+    } catch (error) {
+      res.redirect(`/actors?error=${encodeURIComponent(error.message)}`);
+    }
+  }),
+);
+router.post(
+  '/actors/:id/message',
+  asyncHandler(async (req, res) => {
+    try {
+      await sendMessage(req.params.id, {
+        operation: req.body.operation,
+        payload: {
+          amount: req.body.amount ? Number(req.body.amount) : undefined,
+          name: req.body.name,
+        },
+      });
+      res.redirect(
+        `/actors/${encodeURIComponent(req.params.id)}?message=Message%20processed`,
+      );
+    } catch (error) {
+      res.redirect(
+        `/actors/${encodeURIComponent(req.params.id)}?error=${encodeURIComponent(error.message)}`,
+      );
+    }
+  }),
+);
+router.post(
+  '/actors/:id/status',
+  asyncHandler(async (req, res) => {
+    if (!['active', 'idle'].includes(req.body.status))
+      return res.redirect(
+        `/actors/${encodeURIComponent(req.params.id)}?error=Invalid%20actor%20status`,
+      );
+    const actor = await Actor.findOneAndUpdate(
+      { actorId: req.params.id },
+      { status: req.body.status },
+    );
+    if (!actor) return res.redirect('/actors?error=Actor%20not%20found');
+    await recordEvent(
+      'actor.status',
+      `${req.params.id} marked ${req.body.status}`,
+      { actorId: req.params.id },
+    );
+    res.redirect(
+      `/actors/${encodeURIComponent(req.params.id)}?message=Actor%20status%20updated`,
+    );
+  }),
+);
+router.post(
+  '/rebalancing/trigger',
+  asyncHandler(async (_req, res) => {
+    try {
+      const result = await rebalance();
+      res.redirect(
+        `/rebalancing?message=${encodeURIComponent(`Moved ${result.moved} actors`)}`,
+      );
+    } catch (error) {
+      res.redirect(`/rebalancing?error=${encodeURIComponent(error.message)}`);
+    }
+  }),
+);
+router.post(
+  '/singletons/register',
+  asyncHandler(async (_req, res) => {
+    try {
+      await createActor({
+        actorId: 'global-scheduler',
+        actorType: 'GlobalSchedulerActor',
+      });
+      res.redirect('/singletons?message=GlobalSchedulerActor%20registered');
+    } catch (error) {
+      res.redirect(`/singletons?error=${encodeURIComponent(error.message)}`);
+    }
+  }),
+);
+export default router;

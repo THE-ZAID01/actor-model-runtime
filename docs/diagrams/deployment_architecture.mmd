@@ -1,0 +1,21 @@
+flowchart TB
+  subgraph Cluster["Kubernetes namespace: actorlab"]
+    ApiService["NodePort Service actorlab-api"] --> API["Deployment actorlab-api"]
+    API -->|in-cluster Kubernetes client| KubeAPI["Kubernetes API"]
+    KubeAPI -->|list pods / read logs / patch replicas| WorkerDeployment["Deployment actor-worker"]
+    WorkerService["Headless Service actor-worker-headless"] --> WorkerDeployment
+    API -->|registered worker HTTP URL| Workers["Worker pods"]
+    WorkerDeployment --> Workers
+    API --> MongoService["Service mongodb"]
+    Workers --> MongoService
+    MongoService --> Mongo["MongoDB Deployment and PVC"]
+    API --> RedisService["Service redis"]
+    Workers --> RedisService
+    RedisService --> Redis["Redis Deployment"]
+    Config["ConfigMap actorlab-config"] -. environment .-> API
+    Config -. environment .-> Workers
+    Secret["Secret actorlab-connections"] -. connection URLs .-> API
+    Secret -. connection URLs .-> Workers
+    RBAC["ServiceAccount and Role actorlab-api"] -. grants .-> API
+  end
+  Browser["Browser / client"] --> ApiService

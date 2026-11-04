@@ -1,0 +1,14 @@
+flowchart LR
+  Client["Browser or API client"] --> API["Express API coordinator"]
+  API --> Pages["EJS pages"]
+  API --> Runtime["Runtime service"]
+  Runtime --> Redis[("Redis coordination")]
+  Runtime --> Mongo[("MongoDB durable records")]
+  Runtime --> Worker["Worker HTTP process"]
+  Worker --> RuntimeService["Shared worker execution logic"]
+  RuntimeService --> Redis
+  RuntimeService --> Mongo
+  API --> Kube["Kubernetes client"]
+  Kube --> Cluster["Kubernetes API"]
+  Cluster --> WorkerPod["Worker pods"]
+  Cluster --> API

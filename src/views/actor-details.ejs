@@ -1,0 +1,108 @@
+<section class="page-head">
+  <div>
+    <div class="section-kicker">
+      ACTOR DETAILS <span><%= actor.actorType %></span>
+    </div>
+    <h1><%= actor.actorId %></h1>
+    <p>State, placement, and message testing for this virtual actor.</p>
+  </div>
+  <a class="button secondary" href="/actors">← All actors</a>
+</section>
+<div class="details-grid">
+  <section class="panel table-panel">
+    <div class="panel-heading">
+      <div>
+        <h2>Current state</h2>
+        <small>MongoDB durable record</small>
+      </div>
+      <span class="badge <%= actor.status==='active'?'online':'balanced' %>"><%= actor.status.toUpperCase() %></span>
+    </div>
+    <pre class="json-state"><%= JSON.stringify(actor.state,null,2) %></pre>
+    <div class="metadata">
+      <div><small>WORKER</small><b><%= actor.workerId || 'Unassigned' %></b></div>
+      <div><small>VERSION</small><b><%= actor.version %></b></div>
+      <div><small>LAST ACTIVE</small><b><%= actor.lastActiveAt ? new
+          Date(actor.lastActiveAt).toLocaleString() : '—' %></b></div>
+    </div>
+    <form
+      class="inline-form"
+      method="post"
+      action="/actors/<%= encodeURIComponent(actor.actorId) %>/status"
+    >
+      <button
+        class="button secondary"
+        name="status"
+        value="<%= actor.status==='active'?'idle':'active' %>"
+      >
+        <%= actor.status==='active'?'Deactivate':'Activate' %> actor
+      </button>
+    </form>
+  </section>
+  <section class="panel form-panel">
+    <div class="panel-heading">
+      <div>
+        <h2>Send a message</h2>
+        <small>Each actor processes messages sequentially.</small>
+      </div>
+    </div>
+    <form
+      class="stack-form"
+      method="post"
+      action="/actors/<%= encodeURIComponent(actor.actorId) %>/message"
+    >
+      <label
+        >Operation<select name="operation">
+          <% const
+          ops=actor.actorType==='CounterActor'?['increment','decrement','get']:actor.actorType==='BankAccountActor'?['deposit','withdraw','getBalance']:['tick','addJob','get'];
+          ops.forEach(op=>{ %>
+          <option><%= op %></option>
+          <% }) %>
+        </select></label
+      ><% if(actor.actorType!=='GlobalSchedulerActor'){ %><label
+        >Amount<input name="amount" type="number" step="any" value="1" /></label
+      ><% }else{ %><label
+        >Job name<input
+          name="name"
+          placeholder="nightly-reconciliation" /></label
+      ><% } %><button class="button primary">
+        Send message <span>↗</span>
+      </button>
+    </form>
+  </section>
+</div>
+<section class="panel table-panel">
+  <div class="panel-heading">
+    <div>
+      <h2>Recent messages</h2>
+      <small>At-least-once processing with message ID deduplication</small>
+    </div>
+  </div>
+  <% if(messages.length){ %>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>TIME</th>
+          <th>OPERATION</th>
+          <th>PAYLOAD</th>
+          <th>RESULT</th>
+          <th>MESSAGE ID</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% messages.forEach(message=>{ %>
+        <tr>
+          <td><%= new Date(message.createdAt).toLocaleString() %></td>
+          <td><%= message.operation %></td>
+          <td><code><%= JSON.stringify(message.payload) %></code></td>
+          <td><code><%= JSON.stringify(message.result) %></code></td>
+          <td><code><%= message.messageId.slice(0,16) %>…</code></td>
+        </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+  <% }else{ %>
+  <div class="empty">No messages have been processed for this actor.</div>
+  <% } %>
+</section>

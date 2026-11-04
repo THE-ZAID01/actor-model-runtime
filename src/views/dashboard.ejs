@@ -1,0 +1,119 @@
+<section class="page-head">
+  <div>
+    <div class="section-kicker">RUNTIME OVERVIEW <span>LIVE</span></div>
+    <h1>Dashboard</h1>
+    <p>Virtual actor runtime health and distribution.</p>
+  </div>
+  <a class="button secondary" href="/project">How it works ↗</a>
+</section>
+<section class="metric-grid">
+  <div class="metric panel">
+    <small>TOTAL ACTORS</small><strong><%= data.totalActors %></strong
+    ><span>Registered identities</span>
+  </div>
+  <div class="metric panel">
+    <small>ACTIVE ACTORS</small><strong><%= data.activeActors %></strong
+    ><span>Currently activated</span>
+  </div>
+  <div class="metric panel">
+    <small>MESSAGES PROCESSED</small><strong><%= data.totalMessages %></strong
+    ><span>Recorded message results</span>
+  </div>
+  <div class="metric panel">
+    <small>LIVE WORKERS</small><strong><%= data.workers.length %></strong
+    ><span>Heartbeat within timeout</span>
+  </div>
+  <div class="metric panel">
+    <small>ACTIVE PODS</small><strong><%= cluster.connected ?
+      cluster.pods.filter(p=>p.status?.phase==='Running').length : '—'
+      %></strong
+    ><span><%= cluster.connected ? 'Kubernetes worker pods' : 'Local Development Mode' %></span>
+  </div>
+</section>
+<div class="dashboard-grid">
+  <section class="panel table-panel">
+    <div class="panel-heading">
+      <div>
+        <h2>Actor distribution</h2>
+        <small>Current assignments by registered worker</small>
+      </div>
+      <a href="/workers">View workers ↗</a>
+    </div>
+    <% if(data.actorCounts.length){ %>
+    <div class="distribution">
+      <% data.actorCounts.forEach((item)=>{ const
+      worker=data.workers.find(w=>w.workerId===item._id); %>
+      <div class="dist-row">
+        <div>
+          <b><%= item._id || 'Unassigned' %></b><small><%= worker ? worker.host : 'No live worker' %></small>
+        </div>
+        <div class="dist-bar">
+          <i style="width: <%=
+                Math.max(
+                  5,
+                  Math.min(100, item.count/Math.max(data.totalActors, 1) * 100)
+                )
+                %>%"></i>
+        </div>
+        <strong><%= item.count %></strong>
+      </div>
+      <% }) %>
+    </div>
+    <% }else{ %>
+    <div class="empty">
+      No actors are registered yet. Create an actor to begin.
+    </div>
+    <% } %>
+  </section>
+  <section class="panel table-panel">
+    <div class="panel-heading">
+      <div>
+        <h2>Runtime status</h2>
+        <small>Connected services</small>
+      </div>
+    </div>
+    <div class="status-list">
+      <div><span>API</span><b class="badge online">ONLINE</b></div>
+      <div>
+        <span>Redis coordination</span
+        ><b class="badge <%= data.coordinationAvailable?'online':'balanced' %>"><%= data.coordinationAvailable?'CONNECTED':'UNAVAILABLE' %></b>
+      </div>
+      <div>
+        <span>Worker registry</span
+        ><b class="badge <%= data.workers.length?'online':'balanced' %>"><%= data.coordinationAvailable ? (data.workers.length?'WORKERS LIVE':'NO WORKERS') : 'UNKNOWN' %></b>
+      </div>
+      <div>
+        <span>Singleton lease</span
+        ><b class="badge <%= singleton.active?'online':'balanced' %>"><%=
+          singleton.unavailable?'UNKNOWN':singleton.active?'ACTIVE':'WAITING'
+          %></b>
+      </div>
+    </div>
+    <div class="status-hint"><%= singleton.active ? `GlobalSchedulerActor owned by ${singleton.owner}`
+      : singleton.unavailable ? 'Singleton state unavailable because Redis is disconnected.' : 'GlobalSchedulerActor lease is currently unheld' %></div>
+  </section>
+</div>
+<section class="panel table-panel events-panel">
+  <div class="panel-heading">
+    <div>
+      <h2>Recent runtime events</h2>
+      <small>Actor, worker, and coordination events</small>
+    </div>
+    <a href="/api/events">JSON ↗</a>
+  </div>
+  <% if(data.events.length){ %>
+  <div class="event-list">
+    <% data.events.forEach(event=>{ %>
+    <div class="event-row">
+      <i class="status-dot <%= event.type.includes('error')?'amber':'blue' %>"></i
+      ><span class="event-kind"><%= event.type %></span
+      ><span><%= event.message %></span><time><%= new Date(event.createdAt).toLocaleString() %></time>
+    </div>
+    <% }) %>
+  </div>
+  <% }else{ %>
+  <div class="empty">
+    Runtime events will appear here as actors and workers connect.
+  </div>
+  <% } %>
+</section>

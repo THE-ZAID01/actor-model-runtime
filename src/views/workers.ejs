@@ -1,0 +1,127 @@
+<section class="page-head">
+  <div>
+    <div class="section-kicker">PROCESS POOL <span>HEARTBEATS</span></div>
+    <h1>Workers</h1>
+    <p>Live worker registrations and actor ownership distribution.</p>
+  </div>
+  <a class="button secondary" href="/rebalancing">Rebalance actors ↗</a>
+</section>
+<section class="panel table-panel">
+  <div class="panel-heading">
+    <div>
+      <h2>Runtime workers</h2>
+      <small
+        >Workers are live while their heartbeat is within the configured
+        timeout.</small
+      >
+    </div>
+    <span class="badge <%= !available?'balanced':workers.length?'online':'balanced' %>"><%= !available?'REGISTRY UNAVAILABLE':`${workers.length} LIVE` %></span>
+  </div>
+  <% if(workers.length){ %>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>WORKER ID</th>
+          <th>HOST</th>
+          <th>URL</th>
+          <th>ACTIVE ACTORS</th>
+          <th>MODE</th>
+          <th>HEARTBEAT</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% workers.forEach(worker=>{ %>
+        <tr>
+          <td><b><%= worker.workerId %></b></td>
+          <td><%= worker.host || '—' %></td>
+          <td><code><%= worker.url %></code></td>
+          <td><%= actors.filter(a=>a.workerId===worker.workerId).length %></td>
+          <td><%= worker.mode || 'local' %></td>
+          <td><%= new Date(worker.lastHeartbeat).toLocaleTimeString() %></td>
+        </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+  <% }else{ %>
+  <div class="empty"><%= available?'No runtime workers are registered. Start one with npm run worker.':'Redis is unavailable, so worker registration cannot be read.' %></div>
+  <% } %>
+</section>
+<section class="panel table-panel">
+  <div class="panel-heading">
+    <div>
+      <h2>Actor placement</h2>
+      <small>Identity remains stable when its assigned worker changes.</small>
+    </div>
+  </div>
+  <% if(actors.length){ %>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>ACTOR</th>
+          <th>TYPE</th>
+          <th>ASSIGNED WORKER</th>
+          <th>STATUS</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% actors.forEach(actor=>{ %>
+        <tr>
+          <td>
+            <a class="table-link" href="/actors/<%= encodeURIComponent(actor.actorId) %>"
+              ><%= actor.actorId %></a
+            >
+          </td>
+          <td><%= actor.actorType %></td>
+          <td><%= actor.workerId || '—' %></td>
+          <td>
+            <span class="badge <%= actor.status==='active'?'online':'balanced' %>"
+              ><%= actor.status.toUpperCase() %></span
+            >
+          </td>
+        </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+  <% }else{ %>
+  <div class="empty">No actors to place.</div>
+  <% } %>
+</section>
+<section class="panel table-panel">
+  <div class="panel-heading">
+    <div>
+      <h2>Kubernetes worker pods</h2>
+      <small><%= cluster.connected?'Live cluster data':'Local mode — no pod data is fabricated' %></small>
+    </div>
+    <a href="/cluster">Cluster status ↗</a>
+  </div>
+  <% if(cluster.connected && clusterWorkers.length){ %>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>POD</th>
+          <th>STATUS</th>
+          <th>IP</th>
+          <th>NODE</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% clusterWorkers.forEach(worker=>{ %>
+        <tr>
+          <td><%= worker.name %></td>
+          <td><%= worker.status %></td>
+          <td><%= worker.ip || '—' %></td>
+          <td><%= worker.node || '—' %></td>
+        </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+  <% }else{ %>
+  <div class="empty"><%= cluster.message %></div>
+  <% } %>
+</section>

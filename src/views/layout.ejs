@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="theme-color" content="#09090b" />
+    <title><%= page %> · ActorLab</title>
+    <link rel="stylesheet" href="/assets/css/project.css" />
+    <link rel="stylesheet" href="/assets/css/app.css" />
+  </head>
+  <body class="app-body">
+    <div class="shell">
+      <aside class="sidebar">
+        <a class="brand" href="/"
+          ><span class="brand-mark">A</span
+          ><span
+            >Actor<span class="brand-light">Lab</span
+            ><small>VIRTUAL ACTOR RUNTIME</small></span
+          ></a
+        >
+        <div class="side-label">RUNTIME</div>
+        <a class="side-link <%= page==='Dashboard'?'active':'' %>" href="/"
+          ><span class="nav-icon">◈</span>Dashboard</a
+        ><a class="side-link <%= page==='Actors'?'active':'' %>" href="/actors"
+          ><span class="nav-icon">▤</span>Actors</a
+        ><a class="side-link <%= page==='Workers'?'active':'' %>" href="/workers"
+          ><span class="nav-icon">▦</span>Workers</a
+        ><a class="side-link <%= page==='Rebalancing'?'active':'' %>" href="/rebalancing"
+          ><span class="nav-icon">⇄</span>Rebalancing</a
+        ><a class="side-link <%= page==='Singletons'?'active':'' %>" href="/singletons"
+          ><span class="nav-icon">◇</span>Singletons</a
+        ><a class="side-link <%= page==='Cluster'?'active':'' %>" href="/cluster"
+          ><span class="nav-icon">☸</span>Cluster status</a
+        >
+        <div class="side-label">DOCUMENTATION</div>
+        <a class="side-link" href="/project"
+          ><span class="nav-icon">ⓘ</span>How it works</a
+        >
+        <div class="sidebar-bottom">
+          <span class="live-dot"></span><span>ActorLab runtime</span
+          ><span class="version">v1.0</span>
+        </div>
+      </aside>
+      <main class="main">
+        <header class="topbar">
+          <div class="crumb">
+            ActorLab <span>/</span> <%= page %>
+          </div>
+          <div class="runtime-state">
+            <i class="status-dot blue"></i> Runtime console
+          </div>
+        </header>
+        <div class="content app-content">
+          <% if (query?.error) { %>
+          <div class="flash error"><%= query.error %></div>
+          <% } %><% if (query?.message) { %>
+          <div class="flash success"><%= query.message %></div>
+          <% } %><%- include(view) %>
+        </div>
+      </main>
+    </div>
+    <script src="/assets/js/app.js" defer></script>
+  </body>
+</html>

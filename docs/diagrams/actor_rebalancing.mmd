@@ -1,0 +1,16 @@
+flowchart TD
+  Trigger["Manual rebalance request"] --> Enough{"At least two live workers?"}
+  Enough -- no --> Conflict["Return 409 conflict"]
+  Enough -- yes --> Count["Count actors assigned to live workers"]
+  Count --> Select["Select dead-owner or overloaded actor"]
+  Select --> Mark["Mark actor migrating in MongoDB"]
+  Mark --> Drain["Request old worker actor drain"]
+  Drain --> Assign["Write target worker and next generation"]
+  Assign --> CAS{"Redis owner compare-and-set"}
+  CAS -- success --> Idle["Set actor idle and update distribution"]
+  CAS -- conflict --> Reconcile["Restore latest Redis assignment when available"]
+  CAS -- Redis error --> Error["Set actor idle and return error"]
+  Reconcile --> Continue{"More candidates?"}
+  Idle --> Continue
+  Continue -- yes --> Select
+  Continue -- no --> Summary["Record event and return moved count"]

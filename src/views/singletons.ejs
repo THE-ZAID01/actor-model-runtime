@@ -1,0 +1,77 @@
+<section class="page-head">
+  <div>
+    <div class="section-kicker">
+      EXCLUSIVE LEASE <span>FENCED OWNERSHIP</span>
+    </div>
+    <h1>Singletons</h1>
+    <p>
+      Redis leases coordinate one valid GlobalSchedulerActor owner across
+      workers.
+    </p>
+  </div>
+  <form method="post" action="/singletons/register">
+    <button class="button primary" <%= actors.length?'disabled':'' %>>
+      Register scheduler <span>＋</span>
+    </button>
+  </form>
+</section>
+<div class="details-grid">
+  <section class="panel table-panel">
+    <div class="panel-heading">
+      <div>
+        <h2>GlobalSchedulerActor</h2>
+        <small>global-scheduler</small>
+      </div>
+      <span class="badge <%= state.active?'online':'balanced' %>"><%= state.active?'LEASE ACTIVE':'LEASE UNHELD' %></span>
+    </div>
+    <div class="metadata singleton-metadata">
+      <div><small>OWNER</small><b><%= state.owner || 'No current owner' %></b></div>
+      <div><small>FENCING GENERATION</small><b><%= state.generation || '—' %></b></div>
+      <div><small>LEASE EXPIRY</small><b><%= state.expiresAt ? new Date(state.expiresAt).toLocaleTimeString() : '—' %></b></div>
+    </div>
+    <p class="subtle">
+      The healthy worker renews its lease. Another worker may acquire it after
+      expiry. Each acquisition increments the fencing generation.
+    </p>
+  </section>
+  <section class="panel table-panel">
+    <div class="panel-heading">
+      <div>
+        <h2>Scheduler actor state</h2>
+        <small>Durable MongoDB state</small>
+      </div>
+    </div>
+    <% if(actors.length){ %>
+    <pre class="json-state"><%= JSON.stringify(actors[0].state,null,2) %></pre>
+    <a class="button secondary" href="/actors/<%= encodeURIComponent(actors[0].actorId) %>"
+      >Open actor →</a
+    ><% }else{ %>
+    <div class="empty">
+      Register the built-in scheduler actor to start lease coordination.
+    </div>
+    <% } %>
+  </section>
+</div>
+<section class="panel table-panel">
+  <div class="panel-heading">
+    <div>
+      <h2>Singleton and failover events</h2>
+      <small>Lease acquisitions are recorded for inspection.</small>
+    </div>
+  </div>
+  <% if(events.length){ %>
+  <div class="event-list">
+    <% events.filter(e=>e.type.startsWith('singleton')).forEach(event=>{ %>
+    <div class="event-row">
+      <i class="status-dot green"></i
+      ><span class="event-kind"><%= event.type %></span
+      ><span><%= event.message %></span><time><%= new Date(event.createdAt).toLocaleString() %></time>
+    </div>
+    <% }) %>
+  </div>
+  <% }else{ %>
+  <div class="empty">
+    Lease acquisition and failover events will appear here.
+  </div>
+  <% } %>
+</section>

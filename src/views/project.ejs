@@ -1,0 +1,657 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#09090b" />
+    <title><%= title %> · ActorLab</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/assets/css/project.css" />
+  </head>
+  <body>
+    <div class="shell">
+      <aside class="sidebar">
+        <a class="brand" href="#top"
+          ><span class="brand-mark">A</span
+          ><span
+            >Actor<span class="brand-light">Lab</span
+            ><small>RUNTIME FIELD GUIDE</small></span
+          ></a
+        >
+        <div class="side-label">PROJECT</div>
+        <a class="side-link active" href="#overview"
+          ><span class="nav-icon">◈</span>Overview</a
+        >
+        <div class="side-label">HOW IT WORKS</div>
+        <a class="side-link" href="#architecture"
+          ><span class="nav-icon">⌘</span>Architecture</a
+        >
+        <a class="side-link" href="#message-flow"
+          ><span class="nav-icon">↗</span>Message flow</a
+        >
+        <a class="side-link" href="#state"
+          ><span class="nav-icon">▤</span>Actor state</a
+        >
+        <a class="side-link" href="#workers"
+          ><span class="nav-icon">▦</span>Workers &amp; placement</a
+        >
+        <a class="side-link" href="#rebalance"
+          ><span class="nav-icon">⇄</span>Rebalancing</a
+        >
+        <a class="side-link" href="#singletons"
+          ><span class="nav-icon">◇</span>Singletons</a
+        >
+        <div class="side-label">OPERATIONS</div>
+        <a class="side-link" href="#kubernetes"
+          ><span class="nav-icon">☸</span>Kubernetes</a
+        >
+        <a class="side-link" href="#local-dev"
+          ><span class="nav-icon">⌘</span>Local development</a
+        >
+        <div class="sidebar-bottom">
+          <span class="live-dot"></span><span>Runtime guide</span
+          ><span class="version">v1.0</span>
+        </div>
+      </aside>
+
+      <main id="top" class="main">
+        <header class="topbar">
+          <div class="crumb">ActorLab <span>/</span> Project guide</div>
+          <a class="github-link" href="#architecture"
+            ><span>⌘</span> Runtime architecture <span class="arrow">↗</span></a
+          >
+        </header>
+        <div class="content">
+          <section id="overview" class="hero">
+            <div class="eyebrow">
+              <span class="eyebrow-dot"></span> VIRTUAL ACTOR RUNTIME
+              <span class="eyebrow-line"></span> KUBERNETES READY
+            </div>
+            <h1>Actors that keep<br />their <span>identity.</span></h1>
+            <p class="hero-copy">
+              ActorLab is a small, distributed runtime for stateful virtual
+              actors. It routes each message to the actor’s current worker,
+              saves state durably, and moves actors as the worker pool changes.
+            </p>
+            <div class="hero-actions">
+              <a class="button primary" href="#message-flow"
+                >Explore the runtime <span>↓</span></a
+              ><a class="button secondary" href="#local-dev"
+                >Run locally <span>↗</span></a
+              >
+            </div>
+            <div class="hero-foot">
+              <span><i class="status-dot green"></i> Durable actor state</span
+              ><span><i class="status-dot blue"></i> Distributed ownership</span
+              ><span><i class="status-dot amber"></i> Kubernetes aware</span>
+            </div>
+            <div class="hero-index">01 / 08</div>
+          </section>
+
+          <section class="stats" aria-label="Runtime building blocks">
+            <article class="stat">
+              <span class="stat-icon blue-icon">◈</span>
+              <div>
+                <strong>Virtual actors</strong
+                ><small>Identity independent of workers</small>
+              </div>
+              <span class="stat-index">01</span>
+            </article>
+            <article class="stat">
+              <span class="stat-icon green-icon">▤</span>
+              <div>
+                <strong>Durable state</strong
+                ><small>MongoDB is the source of truth</small>
+              </div>
+              <span class="stat-index">02</span>
+            </article>
+            <article class="stat">
+              <span class="stat-icon amber-icon">⇄</span>
+              <div>
+                <strong>Live placement</strong
+                ><small>Redis coordinates ownership</small>
+              </div>
+              <span class="stat-index">03</span>
+            </article>
+            <article class="stat">
+              <span class="stat-icon slate-icon">☸</span>
+              <div>
+                <strong>Cluster native</strong
+                ><small>Workers scale as pods</small>
+              </div>
+              <span class="stat-index">04</span>
+            </article>
+          </section>
+
+          <section id="architecture" class="section-block">
+            <div class="section-heading">
+              <div>
+                <div class="section-kicker">SYSTEM MAP <span>01</span></div>
+                <h2>One identity. A distributed runtime.</h2>
+              </div>
+              <p>
+                Actor IDs are stable. Worker placement is temporary and can
+                change without changing how a client addresses an actor.
+              </p>
+            </div>
+            <div class="architecture panel">
+              <div class="diagram-label">ACTORLAB · RUNTIME COMPONENTS</div>
+              <div class="diagram-row clients">
+                <div class="node client-node">
+                  <span class="node-icon">⌘</span><b>Client / UI</b
+                  ><small>HTTP requests</small>
+                </div>
+                <div class="connector arrow-right">
+                  <span>actorId + message</span>
+                </div>
+                <div class="node api-node">
+                  <span class="node-icon">⌁</span><b>ActorLab API</b
+                  ><small>Express · routing · pages</small>
+                </div>
+              </div>
+              <div class="diagram-row middle">
+                <div class="node redis-node">
+                  <span class="node-icon">◉</span><b>Redis</b
+                  ><small>Owners · leases · queues</small>
+                </div>
+                <div class="connector double">
+                  <span>lookup / coordinate</span>
+                </div>
+                <div class="node workers-node">
+                  <span class="node-icon">▦</span><b>Actor workers</b
+                  ><small>Mailboxes · handlers</small>
+                  <div class="worker-pills">
+                    <i></i><i></i><i></i><em>+N</em>
+                  </div>
+                </div>
+                <div class="connector arrow-right">
+                  <span>load / save</span>
+                </div>
+                <div class="node mongo-node">
+                  <span class="node-icon">◌</span><b>MongoDB</b
+                  ><small>Durable actor state</small>
+                </div>
+              </div>
+              <div class="diagram-note">
+                <span class="live-dot"></span> Placement can move. Actor
+                identity and persisted state stay addressable.
+              </div>
+            </div>
+            <div class="legend">
+              <span><i class="legend-dot blue"></i>Request path</span
+              ><span><i class="legend-dot amber"></i>Coordination</span
+              ><span><i class="legend-dot green"></i>Durable storage</span>
+            </div>
+          </section>
+
+          <section id="message-flow" class="section-block">
+            <div class="section-heading">
+              <div>
+                <div class="section-kicker">
+                  THE REQUEST PATH <span>02</span>
+                </div>
+                <h2>From message to saved state.</h2>
+              </div>
+              <p>
+                A message is routed by actor identity. The worker serializes
+                that actor’s work, applies its behavior, and persists the new
+                version.
+              </p>
+            </div>
+            <div class="flow-grid">
+              <article class="flow-card">
+                <span class="step-no">01</span>
+                <div class="flow-icon blue-icon">↗</div>
+                <h3>Address the actor</h3>
+                <p>
+                  A client sends an actor ID and operation, such as
+                  <code>counter-42</code> + <code>increment</code>.
+                </p>
+                <span class="flow-tag">IDENTITY</span>
+              </article>
+              <article class="flow-card">
+                <span class="step-no">02</span>
+                <div class="flow-icon amber-icon">⌕</div>
+                <h3>Resolve ownership</h3>
+                <p>
+                  The router checks Redis for the current worker and its
+                  ownership generation. If needed, the actor is assigned and
+                  activated.
+                </p>
+                <span class="flow-tag">REDIS LOOKUP</span>
+              </article>
+              <article class="flow-card">
+                <span class="step-no">03</span>
+                <div class="flow-icon slate-icon">≋</div>
+                <h3>Process in order</h3>
+                <p>
+                  The worker places the message in that actor’s mailbox.
+                  Messages for one actor run sequentially, avoiding concurrent
+                  state changes.
+                </p>
+                <span class="flow-tag">ACTOR MAILBOX</span>
+              </article>
+              <article class="flow-card">
+                <span class="step-no">04</span>
+                <div class="flow-icon green-icon">✓</div>
+                <h3>Save and respond</h3>
+                <p>
+                  The handler updates state, writes a versioned state update to
+                  MongoDB, records the result, then responds to the caller.
+                </p>
+                <span class="flow-tag">MONGODB WRITE</span>
+              </article>
+            </div>
+            <div class="note-bar">
+              <span class="note-symbol">i</span>
+              <p>
+                <b>Delivery guarantee:</b> practical at-least-once processing.
+                Message IDs and idempotency checks help reject retries; the
+                runtime does not claim exactly-once delivery.
+              </p>
+            </div>
+          </section>
+
+          <section id="state" class="section-block split-section">
+            <div>
+              <div class="section-kicker">ACTOR MODEL <span>03</span></div>
+              <h2>Small state machines<br />with durable memory.</h2>
+              <p class="section-copy">
+                An actor owns its state and defines the operations that can
+                change it. The runtime can deactivate an actor in memory and
+                restore it later from its durable record.
+              </p>
+              <div class="actor-types">
+                <div class="type-row">
+                  <span class="type-symbol blue-icon">#</span>
+                  <div>
+                    <b>CounterActor</b
+                    ><small>increment · decrement · get</small>
+                  </div>
+                  <code>{ count: 12 }</code>
+                </div>
+                <div class="type-row">
+                  <span class="type-symbol green-icon">$</span>
+                  <div>
+                    <b>BankAccountActor</b
+                    ><small>deposit · withdraw · getBalance</small>
+                  </div>
+                  <code>{ balance: 250 }</code>
+                </div>
+                <div class="type-row">
+                  <span class="type-symbol amber-icon">◷</span>
+                  <div>
+                    <b>GlobalSchedulerActor</b
+                    ><small>singleton · scheduled work</small>
+                  </div>
+                  <code>{ jobs: 4 }</code>
+                </div>
+              </div>
+            </div>
+            <div class="state-panel panel">
+              <div class="code-head">
+                <span><i class="live-dot"></i> ACTOR RECORD</span
+                ><span>MongoDB</span>
+              </div>
+              <pre><span class="code-muted">{</span>
+  <span class="code-key">"actorId"</span>: <span class="code-string">"counter-42"</span>,
+  <span class="code-key">"actorType"</span>: <span class="code-string">"CounterActor"</span>,
+  <span class="code-key">"state"</span>: { <span class="code-key">"count"</span>: <span class="code-number">12</span> },
+  <span class="code-key">"status"</span>: <span class="code-string">"active"</span>,
+  <span class="code-key">"workerId"</span>: <span class="code-string">"worker-b"</span>,
+  <span class="code-key">"version"</span>: <span class="code-number">8</span>,
+  <span class="code-key">"lastActiveAt"</span>: <span class="code-string">"…"</span>
+<span class="code-muted">}</span></pre>
+              <div class="code-foot">
+                <span>Persisted state survives worker restarts.</span
+                ><span class="version-check">VERSIONED ✓</span>
+              </div>
+            </div>
+          </section>
+
+          <section id="workers" class="section-block">
+            <div class="section-heading">
+              <div>
+                <div class="section-kicker">
+                  PLACEMENT &amp; RECOVERY <span>04</span>
+                </div>
+                <h2>Workers are replaceable. Actors aren’t.</h2>
+              </div>
+              <p>
+                Workers host active actor instances, but they don’t own the only
+                copy of actor state. Redis tracks placement; MongoDB makes
+                recovery possible.
+              </p>
+            </div>
+            <div class="worker-grid">
+              <article class="worker-card panel">
+                <div class="card-head">
+                  <span class="worker-avatar">W1</span
+                  ><span class="badge online">HEALTHY</span>
+                </div>
+                <h3>Worker process</h3>
+                <p>
+                  Registers a worker ID, renews its heartbeat, accepts actor
+                  assignments, and exposes a health endpoint.
+                </p>
+                <div class="worker-meta">
+                  <span>Heartbeat</span><b>periodic</b>
+                </div>
+                <div class="worker-meta">
+                  <span>Active actors</span><b>reported to registry</b>
+                </div>
+              </article>
+              <article class="worker-card panel">
+                <div class="card-head">
+                  <span class="worker-avatar alt">↻</span
+                  ><span class="badge durable">RECOVERY</span>
+                </div>
+                <h3>Failure recovery</h3>
+                <p>
+                  When a heartbeat expires, the coordinator marks the worker
+                  unavailable and reassigns its actors to healthy workers.
+                </p>
+                <div class="worker-meta">
+                  <span>Reload</span><b>latest MongoDB state</b>
+                </div>
+                <div class="worker-meta">
+                  <span>Fence</span><b>reject stale ownership</b>
+                </div>
+              </article>
+              <article class="worker-card panel">
+                <div class="card-head">
+                  <span class="worker-avatar blue-avatar">⇄</span
+                  ><span class="badge balanced">PLACEMENT</span>
+                </div>
+                <h3>Actor distribution</h3>
+                <p>
+                  A simple actor-count strategy spreads assignments across
+                  available workers. Actor IDs remain unchanged as placement
+                  shifts.
+                </p>
+                <div class="worker-meta">
+                  <span>Registry</span><b>Redis ownership map</b>
+                </div>
+                <div class="worker-meta">
+                  <span>Identity</span><b>stable actor ID</b>
+                </div>
+              </article>
+            </div>
+          </section>
+
+          <section id="rebalance" class="section-block">
+            <div class="section-heading">
+              <div>
+                <div class="section-kicker">SAFE MIGRATION <span>05</span></div>
+                <h2>Move ownership in a controlled handoff.</h2>
+              </div>
+              <p>
+                Rebalancing evens out actor counts after workers join or leave.
+                Each move preserves state and prevents the old owner from
+                continuing to process.
+              </p>
+            </div>
+            <div class="rebalance-panel panel">
+              <div class="rebalance-top">
+                <div>
+                  <span class="badge balanced">REBALANCE SEQUENCE</span>
+                  <h3>Drain → persist → transfer → resume</h3>
+                </div>
+                <div class="balance-before">
+                  <span>BEFORE</span>
+                  <div><i style="width: 82%"></i></div>
+                  <b>W1 · 82</b>
+                  <div><i class="bar-two" style="width: 31%"></i></div>
+                  <b>W2 · 31</b>
+                </div>
+              </div>
+              <div class="sequence">
+                <div class="sequence-item">
+                  <span>1</span><b>Select</b
+                  ><small>Choose actors from overloaded workers.</small>
+                </div>
+                <div class="sequence-item">
+                  <span>2</span><b>Drain</b
+                  ><small>Stop new work; finish the mailbox.</small>
+                </div>
+                <div class="sequence-item">
+                  <span>3</span><b>Persist</b
+                  ><small>Save the latest actor state.</small>
+                </div>
+                <div class="sequence-item">
+                  <span>4</span><b>Transfer</b
+                  ><small>Atomically update Redis ownership.</small>
+                </div>
+                <div class="sequence-item">
+                  <span>5</span><b>Activate</b
+                  ><small>New owner loads state and resumes.</small>
+                </div>
+              </div>
+              <div class="rebalance-foot">
+                <span
+                  ><i class="status-dot amber"></i> Ownership versions fence
+                  stale workers</span
+                ><span>Trigger from the Rebalancing page or runtime API</span>
+              </div>
+            </div>
+          </section>
+
+          <section
+            id="singletons"
+            class="section-block split-section singleton-section"
+          >
+            <div>
+              <div class="section-kicker">
+                EXCLUSIVE COORDINATION <span>06</span>
+              </div>
+              <h2>One valid owner<br />at a time.</h2>
+              <p class="section-copy">
+                A singleton actor is useful for shared coordination, such as a
+                global scheduler. Redis leases grant one worker ownership, and
+                fencing generations make stale owners invalid.
+              </p>
+              <div class="lease-list">
+                <div>
+                  <i class="status-dot green"></i
+                  ><span>Acquire a lease with an owner and expiry</span>
+                </div>
+                <div>
+                  <i class="status-dot blue"></i
+                  ><span>Renew while the worker is healthy</span>
+                </div>
+                <div>
+                  <i class="status-dot amber"></i
+                  ><span>Expire and fail over after worker loss</span>
+                </div>
+              </div>
+            </div>
+            <div class="lease-card panel">
+              <div class="lease-card-head">
+                <span class="node-icon amber-icon">◇</span
+                ><span class="badge online">LEASE ACTIVE</span>
+              </div>
+              <div class="lease-title">GlobalSchedulerActor</div>
+              <div class="lease-id">singleton://global-scheduler</div>
+              <div class="lease-divider"></div>
+              <div class="lease-detail">
+                <span>Current owner</span
+                ><b><i class="live-dot"></i> worker-b</b>
+              </div>
+              <div class="lease-detail">
+                <span>Lease generation</span><b class="mono">fence-018</b>
+              </div>
+              <div class="lease-detail">
+                <span>Lease expiry</span
+                ><b class="mono">renewed periodically</b>
+              </div>
+              <div class="lease-foot">
+                If the lease expires, another healthy worker can acquire a newer
+                generation.
+              </div>
+            </div>
+          </section>
+
+          <section id="kubernetes" class="section-block">
+            <div class="section-heading">
+              <div>
+                <div class="section-kicker">
+                  CLUSTER INTEGRATION <span>07</span>
+                </div>
+                <h2>Kubernetes runs the workers.</h2>
+              </div>
+              <p>
+                ActorLab uses the Kubernetes JavaScript client for real cluster
+                information and worker scaling. When no cluster is configured,
+                the app reports local mode.
+              </p>
+            </div>
+            <div class="kube-layout">
+              <div class="kube-copy panel">
+                <div class="kube-title">
+                  <span class="kube-wheel">☸</span>
+                  <div>
+                    <b>Cluster adapter</b><small>@kubernetes/client-node</small>
+                  </div>
+                </div>
+                <p>
+                  Connects through kubeconfig during local development or the
+                  in-cluster service account in Kubernetes.
+                </p>
+                <div class="kube-capabilities">
+                  <span>List worker pods</span><span>Read pod status</span
+                  ><span>Inspect deployment</span
+                  ><span>Scale worker replicas</span
+                  ><span>Read logs when available</span>
+                </div>
+                <div class="local-warning">
+                  <span>i</span>
+                  <p>
+                    <b>No cluster configured?</b> The cluster page shows “Local
+                    Development Mode” and no fabricated pod data.
+                  </p>
+                </div>
+              </div>
+              <div class="deploy-panel panel">
+                <div class="code-head">
+                  <span>DEPLOYMENT SHAPE</span
+                  ><span class="badge durable">K8S</span>
+                </div>
+                <div class="deploy-tree">
+                  <div>
+                    <span class="tree-icon">▣</span><b>actorlab namespace</b>
+                  </div>
+                  <div class="tree-child">
+                    <span class="tree-line"></span
+                    ><span class="tree-icon api-tree">⌁</span
+                    ><b>API deployment</b><small>Express + EJS</small>
+                  </div>
+                  <div class="tree-child">
+                    <span class="tree-line"></span
+                    ><span class="tree-icon worker-tree">▦</span
+                    ><b>Worker deployment</b><small>scalable replicas</small>
+                  </div>
+                  <div class="tree-child">
+                    <span class="tree-line"></span
+                    ><span class="tree-icon data-tree">◉</span
+                    ><b>Redis + MongoDB</b><small>coordination + state</small>
+                  </div>
+                </div>
+                <div class="deploy-footer">
+                  <span>Minimal RBAC</span><span>Shared application image</span
+                  ><span>Worker service</span>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section id="local-dev" class="section-block local-section">
+            <div class="section-heading">
+              <div>
+                <div class="section-kicker">GET STARTED <span>08</span></div>
+                <h2>Run the runtime locally.</h2>
+              </div>
+              <p>
+                Start data services with Docker Compose, then run the API and
+                workers as separate processes. Use the same application image
+                for cluster deployments.
+              </p>
+            </div>
+            <div class="terminal panel">
+              <div class="terminal-head">
+                <div class="window-dots"><i></i><i></i><i></i></div>
+                <span>TERMINAL · ACTORLAB</span
+                ><button
+                  class="copy-button"
+                  type="button"
+                  data-copy="npm install&#10;Copy-Item .env.example .env&#10;docker compose up -d mongodb redis&#10;npm start&#10;npm run worker"
+                >
+                  COPY COMMANDS
+                </button>
+              </div>
+              <div class="terminal-body">
+                <div>
+                  <span class="line-no">01</span
+                  ><code><em>$</em> npm install</code
+                  ><small>Install the application dependencies</small>
+                </div>
+                <div>
+                  <span class="line-no">02</span
+                  ><code><em>$</em> Copy-Item .env.example .env</code
+                  ><small>Configure local connection settings</small>
+                </div>
+                <div>
+                  <span class="line-no">03</span
+                  ><code><em>$</em> docker compose up -d mongodb redis</code
+                  ><small
+                    >Start the durable state and coordination stores</small
+                  >
+                </div>
+                <div>
+                  <span class="line-no">04</span
+                  ><code><em>$</em> npm start</code
+                  ><small>Run the API and server-rendered UI</small>
+                </div>
+                <div>
+                  <span class="line-no">05</span
+                  ><code><em>$</em> npm run worker</code
+                  ><small>Start a worker in a second terminal</small>
+                </div>
+              </div>
+              <div class="terminal-foot">
+                <span
+                  ><i class="status-dot green"></i> Local runtime · Kubernetes
+                  is optional</span
+                ><span>Set a unique WORKER_ID to add workers</span>
+              </div>
+            </div>
+            <div class="demo-callout">
+              <div class="demo-symbol">↗</div>
+              <div>
+                <b>Follow an actor through the runtime</b>
+                <p>
+                  Create a CounterActor, send increment messages, restart or
+                  move its worker, then confirm its saved count is restored from
+                  MongoDB.
+                </p>
+              </div>
+              <a href="#message-flow">SEE THE FLOW <span>↗</span></a>
+            </div>
+          </section>
+          <footer class="footer">
+            <a class="brand footer-brand" href="#top"
+              ><span class="brand-mark">A</span
+              ><span>Actor<span class="brand-light">Lab</span></span></a
+            ><span>Virtual actors · Durable state · Kubernetes workers</span
+            ><a href="#top">BACK TO TOP ↑</a>
+          </footer>
+        </div>
+      </main>
+    </div>
+    <script src="/assets/js/project.js" defer></script>
+  </body>
+</html>

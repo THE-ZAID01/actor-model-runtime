@@ -1,0 +1,10 @@
+stateDiagram-v2
+  [*] --> Idle: actor created in MongoDB
+  Idle --> Active: successful message
+  Active --> Active: successful message
+  Active --> Idle: status set to idle
+  Idle --> Active: status set to active
+  Idle --> Migrating: rebalance starts
+  Active --> Migrating: rebalance starts
+  Migrating --> Idle: ownership transfer succeeds
+  Migrating --> Idle: conflict recovery completes

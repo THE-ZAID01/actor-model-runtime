@@ -1,0 +1,19 @@
+sequenceDiagram
+  autonumber
+  actor Client
+  participant API as Express API
+  participant Redis
+  participant Worker
+  participant DB as MongoDB
+  Client->>API: Send operation and optional messageId
+  API->>DB: Read actor and prior message result
+  API->>Redis: Resolve live owner and generation
+  API->>Worker: HTTP POST to actor message endpoint
+  Worker->>Worker: Serialize by actor ID in local queue
+  Worker->>Redis: Validate owner and generation
+  Worker->>DB: Load actor and processed ID history
+  Worker->>Worker: Apply actor operation
+  Worker->>DB: Conditional state/version update
+  Worker->>DB: Attempt separate message record insert
+  Worker-->>API: Result and actor
+  API-->>Client: JSON response

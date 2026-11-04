@@ -1,0 +1,21 @@
+sequenceDiagram
+  autonumber
+  participant Worker
+  participant Coordinator as API internal routes
+  participant Redis
+  Worker->>Worker: Connect to MongoDB and Redis
+  Worker->>Worker: Start HTTP server
+  Worker->>Coordinator: POST /internal/workers/register
+  Coordinator->>Redis: Write worker JSON and heartbeat time
+  Redis-->>Coordinator: Stored
+  Coordinator-->>Worker: Registration response
+  loop Every heartbeat interval
+    Worker->>Worker: Read local /health
+    Worker->>Coordinator: POST /internal/workers/heartbeat
+    Coordinator->>Redis: Update worker hash
+    Redis-->>Coordinator: Updated or missing
+    alt Registration missing
+      Worker->>Coordinator: POST /internal/workers/register
+    end
+    Worker->>Coordinator: Acquire or renew singleton lease
+  end

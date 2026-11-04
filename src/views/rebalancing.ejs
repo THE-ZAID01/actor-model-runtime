@@ -1,0 +1,74 @@
+<section class="page-head">
+  <div>
+    <div class="section-kicker">
+      OWNERSHIP MIGRATION <span>CONTROLLED</span>
+    </div>
+    <h1>Rebalancing</h1>
+    <p>
+      Redistribute actors by count across live workers while preserving durable
+      state.
+    </p>
+  </div>
+  <form method="post" action="/rebalancing/trigger">
+    <button class="button primary" <%= workers.length<2?'disabled':'' %>>
+      Trigger rebalancing <span>⇄</span>
+    </button>
+  </form>
+</section>
+<div class="note-bar">
+  <span class="note-symbol">i</span>
+  <p>
+    Migration drains the old worker mailbox, relies on each message’s MongoDB
+    commit, then uses a Redis compare-and-set ownership update with an
+    incremented fencing generation.
+  </p>
+</div>
+<section class="panel table-panel">
+  <div class="panel-heading">
+    <div>
+      <h2>Current distribution</h2>
+      <small
+        ><%= workers.length %> live worker(s) · <%= actors.length %> assigned
+        actor(s)</small
+      >
+    </div>
+  </div>
+  <% if(workers.length){ %>
+  <div class="distribution">
+    <% workers.forEach(worker=>{const count=actors.filter(a=>a.workerId===worker.workerId).length; %>
+    <div class="dist-row">
+      <div>
+        <b><%= worker.workerId %></b><small><%= worker.host || worker.url %></small>
+      </div>
+      <div class="dist-bar"><i style="width: <%= Math.max(4,actors.length?count/actors.length*100:0) %>%"></i></div>
+      <strong><%= count %></strong>
+    </div>
+    <% }) %>
+  </div>
+  <% }else{ %>
+  <div class="empty">
+    Start at least two workers to demonstrate actor migration.
+  </div>
+  <% } %>
+</section>
+<section class="panel table-panel">
+  <div class="panel-heading">
+    <div>
+      <h2>Rebalance and failover events</h2>
+      <small>Recent coordination events</small>
+    </div>
+  </div>
+  <% if(events.length){ %>
+  <div class="event-list">
+    <% events.forEach(event=>{ %>
+    <div class="event-row">
+      <i class="status-dot amber"></i
+      ><span class="event-kind"><%= event.type %></span
+      ><span><%= event.message %></span><time><%= new Date(event.createdAt).toLocaleString() %></time>
+    </div>
+    <% }) %>
+  </div>
+  <% }else{ %>
+  <div class="empty">No migration events recorded.</div>
+  <% } %>
+</section>

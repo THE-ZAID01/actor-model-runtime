@@ -1,0 +1,36 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: actorlab-api
+  namespace: actorlab
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: actorlab-api
+  namespace: actorlab
+rules:
+  - apiGroups: ['']
+    resources: ['pods']
+    verbs: ['get', 'list']
+  - apiGroups: ['']
+    resources: ['pods/log']
+    verbs: ['get']
+  - apiGroups: ['apps']
+    resources: ['deployments']
+    resourceNames: ['actor-worker']
+    verbs: ['get', 'patch']
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: actorlab-api
+  namespace: actorlab
+subjects:
+  - kind: ServiceAccount
+    name: actorlab-api
+    namespace: actorlab
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: actorlab-api

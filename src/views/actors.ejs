@@ -1,0 +1,86 @@
+<section class="page-head">
+  <div>
+    <div class="section-kicker">VIRTUAL IDENTITIES <span>01</span></div>
+    <h1>Actors</h1>
+    <p>Create actors, inspect their durable state, and send operations.</p>
+  </div>
+</section>
+<section class="panel form-panel">
+  <div class="panel-heading">
+    <div>
+      <h2>Create an actor</h2>
+      <small>Identity is stable when workers change.</small>
+    </div>
+  </div>
+  <form class="form-row" method="post" action="/actors/create">
+    <label
+      >Actor ID<input
+        name="actorId"
+        required
+        maxlength="120"
+        placeholder="counter-orders"
+        pattern="[A-Za-z0-9][A-Za-z0-9._:-]{0,119}" /></label
+    ><label
+      >Actor type<select name="actorType">
+        <option>CounterActor</option>
+        <option>BankAccountActor</option>
+        <option>GlobalSchedulerActor</option>
+      </select></label
+    ><button class="button primary" type="submit">
+      Create actor <span>＋</span>
+    </button>
+  </form>
+</section>
+<section class="panel table-panel">
+  <div class="panel-heading">
+    <div>
+      <h2>Registered actors</h2>
+      <small><%= actors.length %> actor(s)</small>
+    </div>
+  </div>
+  <% if(actors.length){ %>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>ACTOR ID</th>
+          <th>TYPE</th>
+          <th>STATUS</th>
+          <th>WORKER</th>
+          <th>VERSION</th>
+          <th>LAST ACTIVE</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        <% actors.forEach(actor=>{ %>
+        <tr>
+          <td>
+            <a class="table-link" href="/actors/<%= encodeURIComponent(actor.actorId) %>"
+              ><%= actor.actorId %></a
+            >
+          </td>
+          <td><%= actor.actorType %></td>
+          <td>
+            <span class="badge <%= actor.status==='active'?'online':'balanced' %>"
+              ><%= actor.status.toUpperCase() %></span
+            >
+          </td>
+          <td><%= actor.workerId || '—' %></td>
+          <td><%= actor.version %></td>
+          <td><%= actor.lastActiveAt ? new
+            Date(actor.lastActiveAt).toLocaleString() : '—' %></td>
+          <td>
+            <a href="/actors/<%= encodeURIComponent(actor.actorId) %>">Open →</a>
+          </td>
+        </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+  <% }else{ %>
+  <div class="empty">
+    No actors yet. Create a CounterActor or BankAccountActor above.
+  </div>
+  <% } %>
+</section>

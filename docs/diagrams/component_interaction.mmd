@@ -1,0 +1,16 @@
+flowchart TD
+  Client["Client or browser"] -->|JSON request / page request| Express["Express application"]
+  Express --> ApiRoutes["Public API routes"]
+  Express --> PageRoutes["EJS page routes"]
+  ApiRoutes --> Runtime["Runtime service"]
+  PageRoutes --> Runtime
+  PageRoutes --> KubeService["Kubernetes service"]
+  Runtime -->|owner and worker hashes| Redis[("Redis")]
+  Runtime -->|actor, message, event documents| Mongo[("MongoDB")]
+  Runtime -->|HTTP actor request| WorkerHTTP["Worker Express server"]
+  WorkerHTTP --> Mailbox["Per-actor promise-tail queue"]
+  Mailbox --> WorkerLogic["workerProcess"]
+  WorkerLogic --> Redis
+  WorkerLogic --> Mongo
+  KubeService --> KubeAPI["Kubernetes API"]
+  KubeAPI --> Pods["Worker pods and Deployment"]
