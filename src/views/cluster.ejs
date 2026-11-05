@@ -17,7 +17,7 @@
     <p><%= cluster.message %></p>
     <% if(cluster.deployment){ %>
     <p>
-      Worker deployment: <%= cluster.deploymentStatus?.readyReplicas || 0 %> ready / <%= cluster.deployment.spec?.replicas || 0 %>
+      Worker deployment: <%= cluster.deploymentStatus?.readyReplicas || 0 %> ready / <%= cluster.deployment?.replicas || 0 %>
       desired replicas
     </p>
     <% } %>

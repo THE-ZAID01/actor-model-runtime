@@ -11,6 +11,7 @@ import {
   createActor,
   sendMessage,
   recordEvent,
+  resetDemoData,
 } from '../services/runtime.js';
 import {
   getClusterStatus,
@@ -201,6 +202,25 @@ router.post(
         actorType: req.body.actorType,
       });
       res.redirect(`/actors/${encodeURIComponent(actor.actorId)}`);
+    } catch (error) {
+      res.redirect(`/actors?error=${encodeURIComponent(error.message)}`);
+    }
+  }),
+);
+router.post(
+  '/demo/reset',
+  asyncHandler(async (req, res) => {
+    if (String(req.body.confirmation || '').trim() !== 'RESET DEMO')
+      return res.redirect(
+        '/actors?error=Type%20RESET%20DEMO%20to%20confirm%20the%20demo%20reset',
+      );
+    try {
+      const result = await resetDemoData();
+      res.redirect(
+        `/actors?message=${encodeURIComponent(
+          `Demo reset: removed ${result.actors} actors, ${result.messages} messages, and runtime history`,
+        )}`,
+      );
     } catch (error) {
       res.redirect(`/actors?error=${encodeURIComponent(error.message)}`);
     }

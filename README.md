@@ -154,6 +154,19 @@ npm run seed
 The seed command leaves existing records with those IDs unchanged, so it can be
 run again safely.
 
+For the repeatable presentation dataset, use:
+
+```powershell
+npm run demo:seed
+```
+
+This resets demo actors, messages, migrations, and runtime events, then creates
+counter, bank-account, and singleton actors. The Actors page also provides a
+visible reset control; type `RESET DEMO` to confirm it. Worker registrations
+are preserved so the live demo can be reset without restarting workers. See
+[the presentation guide](docs/PRESENTATION_GUIDE.md) for the complete
+demonstration script.
+
 ## Docker Compose
 
 The Compose file starts MongoDB, Redis, one API container, and one worker

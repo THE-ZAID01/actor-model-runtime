@@ -49,6 +49,28 @@ export const recordEvent = (type, message, details = {}) =>
     return null;
   });
 
+export async function resetDemoData() {
+  const [actors, messages, events, migrations] = await Promise.all([
+    Actor.deleteMany({}),
+    Message.deleteMany({}),
+    RuntimeEvent.deleteMany({}),
+    ActorMigration.deleteMany({}),
+  ]);
+  await redis.del([
+    OWNER_KEY,
+    LEASE_KEY,
+    'actorlab:singleton:generation',
+    'actorlab:singleton:status',
+  ]);
+  actorInstances.clear();
+  return {
+    actors: actors.deletedCount,
+    messages: messages.deletedCount,
+    events: events.deletedCount,
+    migrations: migrations.deletedCount,
+  };
+}
+
 export async function listWorkers() {
   const workers = await redis.hGetAll(WORKER_KEY);
   const now = Date.now();
@@ -543,6 +565,7 @@ async function workerProcessLocked(workerId, actorId, body) {
       { $set: { status: 'active' } },
     );
   }
+  instance.state = structuredClone(actor.state);
   actor.state = structuredClone(instance.state);
   const processed = actor.processedMessages.find(
     (entry) => entry.messageId === body.messageId,
